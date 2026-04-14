@@ -91,5 +91,4 @@ git(["commit", "--allow-empty", "-m", msg]);
 console.log(`✓ Seeded: sync for '${pair.name}' will start after ${tipHash.slice(0, 10)}.`);
 console.log();
 console.log("Next steps:");
-console.log(`  1. Push this commit:  git push`);
-console.log(`  2. Run sync:  npm --prefix shadow run sync -- -r ${pair.name} --from ${fromSide}`);
+console.log(`  1. Run sync:  npm --prefix shadow run sync -- -r ${pair.name} --from ${fromSide}`);

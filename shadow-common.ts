@@ -574,12 +574,27 @@ export function replayCommits(opts: {
 
   console.log(`Found ${newCommits.length} new commit(s) to replay.\n`);
 
-  // 5. Graft base — for merge-compatible shadow branches
-  // When target.dir is non-empty, use the seed commit as base tree so shadow
-  // commits carry the full repo tree. When target.dir is empty, no base needed.
+  // 5. Graft base — for merge-compatible shadow branches.
+  // The graft base gives shadow branches shared ancestry with the target repo
+  // so `git merge` works cleanly. We try (in order):
+  //   a) The seed commit in workspace history (when workspace IS the target repo)
+  //   b) The target repo's main branch tip (when running from an orchestrator)
+  //   c) The seed hash from the source side (when target.dir is empty)
   const seedCommit = findSeedCommit(pair.name);
-  const graftBase = target.dir ? seedCommit : (seedHash ?? null);
-  const baseTreeSource = target.dir ? seedCommit : null;
+  let graftBase: string | null;
+  let baseTreeSource: string | null;
+
+  if (target.dir) {
+    // Target has a subdir — shadow commits need full-repo tree overlay.
+    // Use seed commit if available; otherwise target's main branch tip.
+    graftBase = seedCommit
+      ?? (refExists(`${target.remote}/main`) ? git(["rev-parse", `${target.remote}/main`]) : null);
+    baseTreeSource = graftBase;
+  } else {
+    // Target is at root — no full-repo overlay needed.
+    graftBase = seedHash ?? null;
+    baseTreeSource = null;
+  }
 
   if (graftBase) {
     console.log(`Using graft base ${graftBase.slice(0, 10)} for shared ancestry.`);
